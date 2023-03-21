@@ -1,0 +1,21 @@
+
+
+.input {
+  width: 20%
+}
+
+tr, td, table {
+  border: 2px; 
+  border-color: black;
+  border-style: solid;
+  border-collapse: collapse;
+}
+
+table {
+  text-align: center; 
+}
+
+.table {
+  margin: auto;
+  width: 50% !important; 
+}
