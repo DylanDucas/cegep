@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gallery</title>
+
+    <style>
+        body {
+          font-family: Sans-Serif;
+        }
+
+        .leftDiv {
+            text-align: right;
+            width:40%;
+            display: inline-block;
+        }
+
+        .mainDiv {
+            display: inline-block;
+            vertical-align: top;
+            margin-left: -5px;
+            width: 25%;
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+    </style>
+</head>
+<body style="height: 100%;overflow: hidden;">
+    <div id="loginButton" style="position: absolute;" hidden>
+        <button onclick="document.getElementById('loginLink').click();">Login</button>
+        <a id="loginLink" href="http://localhost:4567/login" hidden></a>
+    </div>
+    <h1 style="font-size: xx-large;text-align: center;">Cowsay Manager 3000</h1>
+    <div style="display: inline-block;width: 100%;">
+        <div class="mainDiv">
+            <div>
+                <h1>Files</h1>
+            </div>
+            <div>
+                <ul id="files" style="overflow-y: scroll;height: 70vh;"></ul>
+            </div>
+        </div>
+        <div class="mainDiv">
+            <div class="logged" hidden>
+                <div>
+                    <h1>Add cow</h1>
+                </div>
+                <div>
+                    <div class="leftDiv">
+                        Cow talk file:
+                    </div>
+                    <div style="display: inline-block;">
+                        <input type="file" id="cow_talk_file">
+                    </div>
+                </div>
+                <div>
+                    <div class="leftDiv">
+                        Password:
+                    </div>
+                    <div style="display: inline-block;">
+                        <input type="text" id="password">
+                    </div>
+                </div>
+                <div>
+                    <h2>Options</h2>
+                </div>
+                <div>
+                    <div class="leftDiv">
+                        Cow shape:
+                    </div>
+                    <div style="display: inline-block;">
+                        <select id="cow_shape"></select>
+                    </div>
+                </div>
+                <br>
+                <br>
+                <div style="text-align: center;">
+                    (this option only work on some of the cows!)
+                </div>
+                <div>
+                    <div class="leftDiv">
+                        cow eyes:
+                    </div>
+                    <div style="display: inline-block;">
+                        <select id="cow_eyes">
+                            <option value="">Default</option>
+                            <option value="-b">Borg</option>
+                            <option value="-d">Dead</option>
+                            <option value="-g">Greedy</option>
+                            <option value="-p">Paranoid</option>
+                            <option value="-s">Stoned</option>
+                            <option value="-t">Tired</option>
+                            <option value="-w">Wired</option>
+                            <option value="-y">Youthful</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="vertical-align: center;">
+                    <button onclick="sendCow();">
+                        Send cow
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="mainDiv" id="drawings">
+            <pre>
+                __________
+                < Welcome! >
+                 ----------
+                        \   ^__^
+                         \  (oo)\_______
+                            (__)\       )\/\
+                                ||----w |
+                                ||     ||
+                                ______________
+                                < To our site! >
+                                 --------------
+                                      \                    / \  //\
+                                       \    |\___/|      /   \//  \\
+                                            /0  0  \__  /    //  | \ \    
+                                           /     /  \/_/    //   |  \  \  
+                                           @_^_@'/   \/_   //    |   \   \ 
+                                           //_^_/     \/_ //     |    \    \
+                                        ( //) |        \///      |     \     \
+                                      ( / /) _|_ /   )  //       |      \     _\
+                                    ( // /) '/,_ _ _/  ( ; -.    |    _ _\.-~        .-~~~^-.
+                                  (( / / )) ,-{        _      `-.|.-~-.           .~         `.
+                                 (( // / ))  '/\      /                 ~-. _ .-~      .-~^-.  \
+                                 (( /// ))      `.   {            }                   /      \  \
+                                  (( / ))     .----~-.\        \-'                 .~         \  `. \^-.
+                                             ///.----..>        \             _ -~             `.  ^-`  ^-_
+                                               ///-._ _ _ _ _ _ _}^ - - - - ~                     ~-- ,.-~
+                                                                                                  /.-~
+            </pre>
+            <pre id="koala"></pre>
+        </div>
+    </div>
+    
+    <script>
+        const shapeList = "apt bud-frogs bunny calvin cheese cock cower daemon default dragon dragon-and-cow duck elephant elephant-in-snake eyes flaming-sheep fox ghostbusters gnu hellokitty kangaroo kiss koala kosh luke-koala mech-and-cow milk moofasa moose pony pony-smaller ren sheep skeleton snowman stegosaurus stimpy suse three-eyes turkey turtle tux unipony unipony-smaller vader vader-koala www",
+
+        shapeListbox = document.getElementById("cow_shape"),
+        shapeArray = shapeList.split(" ");
+
+        for (let i = 0; i < shapeArray.length; i++){
+            var shapeOption = document.createElement("option");
+            shapeOption.value, shapeOption.innerText = shapeArray[i];
+            if (shapeArray[i] == "default")shapeOption.selected = true;
+            shapeListbox.appendChild(shapeOption);
+        }
+
+        async function sendCow(){
+            const formData = new FormData();
+
+            formData.append("password", document.getElementById("password").value);
+            formData.append("cow_talk_file", document.getElementById("cow_talk_file").files[0]);
+            formData.append("options",JSON.stringify({cow_eyes:document.getElementById("cow_eyes").value, cow_shape:document.getElementById("cow_shape").value}));
+            await fetch('/files', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+            }).then(async function(response){loadFiles();console.log(response.status,await response.text());});
+        }
+
+        async function downloadCow(hash,locked){
+            let password = "";
+            if (locked) password = prompt("Password?");
+            await fetch(`/files/${hash}/download?pass=${password}`, {
+                method: 'GET',
+                credentials: 'include'
+            }).then(async function(response){
+                let json = await response.json();
+                console.log(response.status,json);
+                var element = document.createElement('a');
+                element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(json["content"]));
+                element.setAttribute('download', json["name"]);
+
+                element.style.display = 'none';
+                document.body.appendChild(element);
+
+                element.click();
+
+                document.body.removeChild(element);
+
+                loadInfo();
+            });
+        }
+
+        async function deleteCow(hash){
+            await fetch(`/files/${hash}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            }).then(async function(response){loadFiles();console.log(response.status,await response.text());});
+        }
+
+        async function patchCow(hash){
+            let newPass = prompt("Please insert a new password.");
+            await fetch(`/files/${hash}`, {
+                method: 'PATCH',
+                body: newPass,
+                credentials: 'include'
+            }).then(async function(response){loadFiles();console.log(response.status,await response.text());});
+        }
+        
+        async function loadFiles() {
+            const files = await fetch('/files', { method: 'GET', credentials: 'include'}).then(response => response.json());
+            const ul = document.querySelector('#files');
+            ul.innerHTML = '';
+
+            for(const f of files) {
+                const li = document.createElement('li');
+                li.style.marginBottom = '32px';
+
+                const locked = (f.private && f.mine == false);
+
+                li.innerHTML = `
+                        <div style="color: gray;">
+                            ${f.timestamp}
+                            <button onclick="downloadCow('${f.hash}',${locked})" class="download">💾</button>
+                            <button onclick="patchCow('${f.hash}');" class="logged" hidden>✏️</button>
+                            <button onclick="deleteCow('${f.hash}');" class="logged" hidden>❌</button>
+                        </div>
+                        <a href="/files/${f.hash}">${f.name}</a> 
+                `;
+
+                if (f.mine) {
+                  li.style.listStyleType = 'disclosure-closed';
+                }
+
+                if (locked) {
+                    li.innerHTML += '🔒';
+                } else if (f.private) {
+                    li.innerHTML += '🔓';
+                }
+
+                li.querySelector('a').onclick = function (e) {
+                    if (locked) {
+                        e.preventDefault(); 
+
+                        const password = prompt('Password?');
+                        if (password != null) {
+                            window.location = `${e.target.href}?pass=${password}`;
+                        }
+                    }
+                };
+
+                ul.appendChild(li);
+            }
+            loadInfo();
+        }
+
+        function loadInfo(){
+            fetch('/loadingInfo', {
+                method: 'GET',
+                credentials: 'include'
+            }).then(async function(response)
+            {
+                let info = await response.text(),
+                logged, top = "", down = "";
+                if (info != null && info != ""){
+                    logged = true;
+                    for (let i = 0; i < info.length; i++){
+                        top += "_";
+                        down += "-";
+                    }
+                } 
+                else logged = false;
+                document.getElementById("loginButton").hidden = logged;
+                loggedTag = document.getElementsByClassName("logged");
+                for (let i = 0; i < loggedTag.length; i++)
+                    loggedTag[i].hidden = !logged;
+                document.getElementById("koala").outerHTML = "";
+                if (logged) document.getElementById("drawings").innerHTML += `
+            <pre id="koala">
+ ____________${top}
+< Welcome ${info} ! >
+ ------------${down}
+  \\
+   \\
+       ___  
+     {~._.~}
+      ( Y )
+     ()~*~()   
+     (_)-(_)   
+            <pre>`
+                else document.getElementById("drawings").innerHTML += `
+            <pre id="koala">
+_________________
+< Oh, a stranger! >
+ -----------------
+  \\
+   \\
+       ___  
+     {~._.~}
+      ( Y )
+     ()~*~()   
+     (_)-(_) 
+            <pre>`
+            })
+        }
+
+        loadFiles();
+    </script>
+</body>
+</html>
