@@ -1,0 +1,12 @@
+body {
+    font-family: sans-serif;
+}
+
+form {
+    max-width: 100%;
+}
+
+table {
+    display: table;
+    width: 100%;
+}
